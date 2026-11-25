@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NexusFlow — Project Management & Analytics</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-app: #0b0e14;
+      --bg-sidebar: #111622;
+      --bg-surface: #161c2c;
+      --bg-surface-hover: #1d253a;
+      --bg-elevated: #222b42;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.16);
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent-primary: #6366f1;
+      --accent-hover: #4f46e5;
+      --accent-glow: rgba(99, 102, 241, 0.25);
+      --cyan: #06b6d4;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.25);
+      --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    body.light-theme {
+      --bg-app: #f1f5f9;
+      --bg-sidebar: #ffffff;
+      --bg-surface: #ffffff;
+      --bg-surface-hover: #f8fafc;
+      --bg-elevated: #e2e8f0;
+      --border-subtle: rgba(15, 23, 42, 0.08);
+      --border-strong: rgba(15, 23, 42, 0.16);
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+      --shadow-card: 0 4px 16px rgba(15, 23, 42, 0.06);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-app);
+      color: var(--text-primary);
+      display: flex;
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 250px;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      padding: 20px 14px;
+      position: fixed;
+      top: 0; bottom: 0; left: 0;
+      z-index: 40;
+      transition: transform 0.25s ease;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 4px 10px 24px;
+      font-weight: 700;
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+    }
+    .brand-icon {
+      width: 34px; height: 34px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, var(--accent-primary), var(--cyan));
+      display: grid; place-items: center;
+      color: #fff; font-weight: 800; font-size: 1rem;
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+    .nav-group { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+    .nav-label {
+      font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--text-muted);
+      padding: 12px 12px 6px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 11px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-size: 0.9rem; font-weight: 500;
+      cursor: pointer; border: none; background: transparent;
+      width: 100%; text-align: left;
+      transition: var(--transition);
+    }
+    .nav-item:hover { background: var(--bg-surface-hover); color: var(--text-primary); }
+    .nav-item.active {
+      background: var(--accent-glow);
+      color: var(--accent-primary);
+      font-weight: 600;
+    }
+    .nav-badge {
+      margin-left: auto;
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+      font-size: 0.72rem; padding: 2px 7px; border-radius: 99px;
+    }
+
+    .workspace-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      margin-top: auto;
+    }
+    .workspace-card small { color: var(--text-muted); font-size: 0.75rem; display: block; }
+    .workspace-card strong { font-size: 0.85rem; display: block; margin-top: 2px; }
+
+    /* Main Content */
+    .main-wrapper {
+      flex: 1;
+      margin-left: 250px;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .topbar {
+      height: 64px;
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--bg-sidebar);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      position: sticky; top: 0; z-index: 30;
+      gap: 16px;
+    }
+    .search-box {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 7px 12px;
+      width: 300px; max-width: 100%;
+    }
+    .search-box input {
+      background: transparent; border: none; outline: none;
+      color: var(--text-primary); font-size: 0.875rem; width: 100%;
+    }
+    .topbar-actions { display: flex; align-items: center; gap: 10px; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem; font-weight: 500;
+      cursor: pointer; border: 1px solid var(--border-subtle);
+      background: var(--bg-surface); color: var(--text-primary);
+      transition: var(--transition);
+    }
+    .btn:hover { background: var(--bg-surface-hover); border-color: var(--border-strong); }
+    .btn-primary {
+      background: var(--accent-primary);
+      border-color: var(--accent-primary);
+      color: #fff;
+    }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-danger { color: var(--rose); border-color: rgba(244, 63, 94, 0.3); }
+    .btn-danger:hover { background: rgba(244, 63, 94, 0.12); }
+
+    .content { padding: 28px; max-width: 1440px; width: 100%; margin: 0 auto; }
+    .view-section { display: none; animation: fadeIn 0.2s ease; }
+    .view-section.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    .page-header {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+      gap: 16px; margin-bottom: 24px;
+    }
+    .page-header h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
+    .page-header p { color: var(--text-secondary); font-size: 0.9rem; }
+
+    /* KPI Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      box-shadow: var(--shadow-card);
+    }
+    .kpi-label { color: var(--text-secondary); font-size: 0.82rem; font-weight: 500; }
+    .kpi-value { font-size: 1.85rem; font-weight: 700; margin: 8px 0 4px; letter-spacing: -0.03em; }
+    .kpi-trend { font-size: 0.78rem; font-weight: 500; }
+    .trend-up { color: var(--emerald); }
+    .trend-warn { color: var(--amber); }
+
+    /* Dashboard Grid */
+    .dash-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 20px;
+    }
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .card-title { font-size: 1rem; font-weight: 600; }
+
+    /* Kanban */
+    .kanban-toolbar {
+      display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; align-items: center;
+    }
+    .kanban-board {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(250px, 1fr));
+      gap: 16px;
+      overflow-x: auto;
+      padding-bottom: 12px;
+    }
+    .kanban-col {
+      background: var(--bg-sidebar);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      min-height: 520px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .kanban-col.drag-over {
+      border-color: var(--accent-primary);
+      background: rgba(99, 102, 241, 0.06);
+    }
+    .col-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 4px 4px 8px;
+      font-size: 0.85rem; font-weight: 600;
+    }
+    .task-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      cursor: grab;
+      transition: var(--transition);
+    }
+    .task-card:hover {
+      border-color: var(--accent-primary);
+      transform: translateY(-2px);
+    }
+    .task-card:active { cursor: grabbing; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .badge-high { background: rgba(244, 63, 94, 0.16); color: var(--rose); }
+    .badge-medium { background: rgba(245, 158, 11, 0.16); color: var(--amber); }
+    .badge-low { background: rgba(16, 185, 129, 0.16); color: var(--emerald); }
+
+    .task-title { font-size: 0.9rem; font-weight: 600; margin: 8px 0 6px; }
+    .task-meta {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 0.75rem; color: var(--text-muted); margin-top: 10px;
+    }
+    .progress-bar {
+      height: 5px; background: var(--bg-elevated);
+      border-radius: 99px; overflow: hidden; margin-top: 8px;
+    }
+    .progress-fill { height: 100%; background: var(--accent-primary); border-radius: 99px; }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    th, td {
+      padding: 12px 14px; text-align: left;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    th { color: var(--text-secondary); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; }
+    tr:hover td { background: var(--bg-surface-hover); }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px);
+      display: none; place-items: center;
+      z-index: 100; padding: 16px;
+    }
+    .modal-backdrop.open { display: grid; }
+    .modal {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-lg);
+      width: 100%; max-width: 480px;
+      padding: 24px;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45);
+    }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px; }
+    .form-control {
+      width: 100%; padding: 9px 12px;
+      background: var(--bg-sidebar);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary); font-size: 0.875rem;
+    }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 22px; right: 22px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--accent-primary);
+      color: var(--text-primary);
+      padding: 12px 18px;
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      box-shadow: var(--shadow-card);
+      transform: translateY(120%);
+      transition: transform 0.25s ease;
+      z-index: 200;
+    }
+    .toast.show { transform: translateY(0); }
+
+    @media (max-width: 960px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main-wrapper { margin-left: 0; }
+      .dash-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-icon">N</div>
+      <span>NexusFlow</span>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Workspace</div>
+      <button class="nav-item active" data-view="dashboard">📊 Dashboard</button>
+      <button class="nav-item" data-view="kanban">📋 Kanban Board <span class="nav-badge" id="nav-task-count">0</span></button>
+      <button class="nav-item" data-view="list">📑 Task List</button>
+      <button class="nav-item" data-view="analytics">📈 Analytics & Reports</button>
+      <div class="nav-label">Organization</div>
+      <button class="nav-item" data-view="team">👥 Team & Settings</button>
+    </div>
+
+    <div class="workspace-card">
+      <small>ACTIVE WORKSPACE</small>
+      <strong>Product Engineering Q4</strong>
+    </div>
+  </aside>
+
+  <div class="main-wrapper">
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="btn" id="menu-toggle" style="display:none;">☰</button>
+        <div class="search-box">
+          <span>🔍</span>
+          <input type="text" id="global-search" placeholder="Search tasks, assignees, tags..." />
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <button class="btn" id="theme-toggle" title="Toggle Theme">🌓 Theme</button>
+        <button class="btn btn-primary" id="open-new-task">+ New Task</button>
+      </div>
+    </header>
+
+    <main class="content">
+      <!-- DASHBOARD VIEW -->
+      <section class="view-section active" id="view-dashboard">
+        <div class="page-header">
+          <div>
+            <h1>Workspace Overview</h1>
+            <p>Track sprint velocity, task completion, and upcoming milestones.</p>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn timeframe-btn active" data-range="7D">7D</button>
+            <button class="btn timeframe-btn" data-range="30D">30D</button>
+            <button class="btn timeframe-btn" data-range="Quarter">Quarter</button>
+          </div>
+        </div>
+
+        <div class="kpi-grid" id="kpi-container"></div>
+
+        <div class="dash-grid">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Velocity & Task Completion Trend</span>
+              <span style="font-size:0.8rem;color:var(--text-secondary);" id="chart-subtitle">Last 7 Days</span>
+            </div>
+            <div id="velocity-chart" style="width:100%;height:240px;"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Upcoming Deadlines</span>
+            </div>
+            <div id="upcoming-list" style="display:flex;flex-direction:column;gap:12px;"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- KANBAN VIEW -->
+      <section class="view-section" id="view-kanban">
+        <div class="page-header">
+          <div>
+            <h1>Kanban Board</h1>
+            <p>Drag and drop tasks across workflow stages.</p>
+          </div>
+          <div class="kanban-toolbar">
+            <select class="form-control" id="kanban-priority-filter" style="width:auto;">
+              <option value="ALL">All Priorities</option>
+              <option value="High">High Priority</option>
+              <option value="Medium">Medium Priority</option>
+              <option value="Low">Low Priority</option>
+            </select>
+          </div>
+        </div>
+        <div class="kanban-board" id="kanban-board"></div>
+      </section>
+
+      <!-- LIST VIEW -->
+      <section class="view-section" id="view-list">
+        <div class="page-header">
+          <div>
+            <h1>All Tasks</h1>
+            <p>Manage, filter, and bulk-export workspace deliverables.</p>
+          </div>
+          <button class="btn" id="export-csv-btn">⬇ Export CSV</button>
+        </div>
+        <div class="card table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Status</th>
+                <th>Priority</th>
+                <th>Assignee</th>
+                <th>Due Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="task-table-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ANALYTICS VIEW -->
+      <section class="view-section" id="view-analytics">
+        <div class="page-header">
+          <div>
+            <h1>Analytics & Reports</h1>
+            <p>Workload distribution across categories and team members.</p>
+          </div>
+        </div>
+        <div class="dash-grid">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Tasks by Category</span></div>
+            <div id="category-breakdown" style="display:flex;flex-direction:column;gap:14px;"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Team Capacity</span></div>
+            <div id="team-capacity" style="display:flex;flex-direction:column;gap:14px;"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TEAM & SETTINGS VIEW -->
+      <section class="view-section" id="view-team">
+        <div class="page-header">
+          <div>
+            <h1>Team & Workspace Settings</h1>
+            <p>Manage members and local workspace storage.</p>
+          </div>
+          <button class="btn btn-danger" id="reset-demo-btn">Reset Demo Data</button>
+        </div>
+        <div class="kpi-grid" id="team-grid"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- TASK MODAL -->
+  <div class="modal-backdrop" id="task-modal">
+    <div class="modal">
+      <div class="card-header">
+        <span class="card-title" id="modal-title">Create New Task</span>
+        <button class="btn" id="close-modal" style="padding:4px 9px;">✕</button>
+      </div>
+      <form id="task-form">
+        <input type="hidden" id="task-id" />
+        <div class="form-group">
+          <label>Task Title</label>
+          <input type="text" class="form-control" id="task-title-input" required placeholder="e.g. Design System Token Audit" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Status</label>
+            <select class="form-control" id="task-status-input">
+              <option value="Backlog">Backlog</option>
+              <option value="To Do">To Do</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Review">Review</option>
+              <option value="Done">Done</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Priority</label>
+            <select class="form-control" id="task-priority-input">
+              <option value="High">High</option>
+              <option value="Medium" selected>Medium</option>
+              <option value="Low">Low</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Assignee</label>
+            <select class="form-control" id="task-assignee-input">
+              <option value="Aarav Sharma">Aarav Sharma</option>
+              <option value="Priya Nair">Priya Nair</option>
+              <option value="Rohan Mehta">Rohan Mehta</option>
+              <option value="Ananya Patel">Ananya Patel</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Category</label>
+            <select class="form-control" id="task-category-input">
+              <option value="Frontend">Frontend</option>
+              <option value="Backend">Backend</option>
+              <option value="UI/UX">UI/UX</option>
+              <option value="QA">QA</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Due Date</label>
+            <input type="date" class="form-control" id="task-due-input" required />
+          </div>
+          <div class="form-group">
+            <label>Completion (%)</label>
+            <input type="number" class="form-control" id="task-progress-input" min="0" max="100" value="0" />
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px;">
+          <button type="button" class="btn" id="cancel-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const STAGES = ['Backlog', 'To Do', 'In Progress', 'Review', 'Done'];
+    const DEFAULT_TASKS = [
+      { id: 't1', title: 'Implement OAuth2 SSO Flow', status: 'In Progress', priority: 'High', assignee: 'Aarav Sharma', category: 'Backend', due: '2026-11-28', progress: 65 },
+      { id: 't2', title: 'Responsive Dashboard Grid Polish', status: 'Review', priority: 'Medium', assignee: 'Priya Nair', category: 'Frontend', due: '2026-11-26', progress: 90 },
+      { id: 't3', title: 'Design System Dark Mode Tokens', status: 'Done', priority: 'Low', assignee: 'Ananya Patel', category: 'UI/UX', due: '2026-11-22', progress: 100 },
+      { id: 't4', title: 'API Rate Limiting Middleware', status: 'To Do', priority: 'High', assignee: 'Rohan Mehta', category: 'Backend', due: '2026-11-30', progress: 15 },
+      { id: 't5', title: 'End-to-End Playwright Checkout Suite', status: 'Backlog', priority: 'Medium', assignee: 'Priya Nair', category: 'QA', due: '2026-12-04', progress: 0 },
+      { id: 't6', title: 'Interactive Analytics SVG Charts', status: 'Done', priority: 'High', assignee: 'Aarav Sharma', category: 'Frontend', due: '2026-11-24', progress: 100 }
+    ];
+
+    let tasks = JSON.parse(localStorage.getItem('nexusflow_tasks')) || [...DEFAULT_TASKS];
+    let currentRange = '7D';
+    let searchQuery = '';
+
+    function saveTasks() {
+      localStorage.setItem('nexusflow_tasks', JSON.stringify(tasks));
+      renderAll();
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2600);
+    }
+
+    function getFilteredTasks() {
+      return tasks.filter(t =>
+        t.title.toLowerCase().includes(searchQuery) ||
+        t.assignee.toLowerCase().includes(searchQuery) ||
+        t.category.toLowerCase().includes(searchQuery)
+      );
+    }
+
+    function renderKPIs() {
+      const total = tasks.length;
+      const done = tasks.filter(t => t.status === 'Done').length;
+      const inProg = tasks.filter(t => t.status === 'In Progress').length;
+      const highPri = tasks.filter(t => t.priority === 'High' && t.status !== 'Done').length;
+      const rate = total ? Math.round((done / total) * 100) : 0;
+
+      document.getElementById('nav-task-count').textContent = total;
+      document.getElementById('kpi-container').innerHTML = `
+        <div class="card">
+          <div class="kpi-label">Total Active Tasks</div>
+          <div class="kpi-value">${total}</div>
+          <div class="kpi-trend trend-up">+12% from last sprint</div>
+        </div>
+        <div class="card">
+          <div class="kpi-label">Completion Rate</div>
+          <div class="kpi-value">${rate}%</div>
+          <div class="kpi-trend trend-up">${done} of ${total} completed</div>
+        </div>
+        <div class="card">
+          <div class="kpi-label">In Progress</div>
+          <div class="kpi-value">${inProg}</div>
+          <div class="kpi-trend">Active sprint focus</div>
+        </div>
+        <div class="card">
+          <div class="kpi-label">Critical Blockers / High</div>
+          <div class="kpi-value">${highPri}</div>
+          <div class="kpi-trend trend-warn">Requires attention</div>
+        </div>
+      `;
+    }
+
+    function renderVelocityChart() {
+      const datasets = {
+        '7D': [4, 6, 5, 8, 7, 10, 12],
+        '30D': [12, 18, 22, 19, 27, 31, 36],
+        'Quarter': [45, 62, 58, 74, 88, 95, 112]
+      };
+      const labels = {
+        '7D': ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        '30D': ['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'Now'],
+        'Quarter': ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Target']
+      };
+      const vals = datasets[currentRange];
+      const lbls = labels[currentRange];
+      const max = Math.max(...vals) * 1.2;
+
+      const bars = vals.map((v, i) => {
+        const h = Math.round((v / max) * 170);
+        const x = 35 + i * 75;
+        const y = 190 - h;
+        return `
+          <g>
+            <rect x="${x}" y="${y}" width="36" height="${h}" rx="6" fill="url(#barGrad)" />
+            <text x="${x + 18}" y="${y - 6}" text-anchor="middle" fill="#94a3b8" font-size="11">${v}</text>
+            <text x="${x + 18}" y="212" text-anchor="middle" fill="#64748b" font-size="11">${lbls[i]}</text>
+          </g>
+        `;
+      }).join('');
+
+      document.getElementById('velocity-chart').innerHTML = `
+        <svg viewBox="0 0 570 230" width="100%" height="100%">
+          <defs>
+            <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#6366f1"/>
+              <stop offset="100%" stop-color="#06b6d4"/>
+            </linearGradient>
+          </defs>
+          ${bars}
+        </svg>
+      `;
+    }
+
+    function renderUpcoming() {
+      const upcoming = tasks.filter(t => t.status !== 'Done').slice(0, 4);
+      document.getElementById('upcoming-list').innerHTML = upcoming.map(t => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--bg-sidebar);border-radius:8px;border:1px solid var(--border-subtle);">
+          <div>
+            <div style="font-size:0.86rem;font-weight:600;">${t.title}</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);">Due ${t.due} • ${t.assignee}</div>
+          </div>
+          <button class="btn" style="padding:4px 9px;font-size:0.75rem;" onclick="markDone('${t.id}')">✓ Done</button>
+        </div>
+      `).join('') || '<p style="color:var(--text-muted);font-size:0.85rem;">All tasks completed!</p>';
+    }
+
+    window.markDone = function(id) {
+      const task = tasks.find(t => t.id === id);
+      if (task) {
+        task.status = 'Done';
+        task.progress = 100;
+        saveTasks();
+        showToast('Task marked as Done');
+      }
+    };
+
+    function renderKanban() {
+      const priFilter = document.getElementById('kanban-priority-filter').value;
+      const filtered = getFilteredTasks().filter(t => priFilter === 'ALL' || t.priority === priFilter);
+      const board = document.getElementById('kanban-board');
+
+      board.innerHTML = STAGES.map(stage => {
+        const colTasks = filtered.filter(t => t.status === stage);
+        return `
+          <div class="kanban-col" data-stage="${stage}">
+            <div class="col-header">
+              <span>${stage}</span>
+              <span class="nav-badge">${colTasks.length}</span>
+            </div>
+            ${colTasks.map(t => `
+              <div class="task-card" draggable="true" data-id="${t.id}" onclick="openEditModal('${t.id}')">
+                <span class="badge badge-${t.priority.toLowerCase()}">${t.priority}</span>
+                <div class="task-title">${t.title}</div>
+                <div style="font-size:0.75rem;color:var(--text-secondary);">${t.category} • ${t.assignee}</div>
+                <div class="progress-bar"><div class="progress-fill" style="width:${t.progress}%"></div></div>
+                <div class="task-meta">
+                  <span>📅 ${t.due}</span>
+                  <span>${t.progress}%</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.task-card').forEach(card => {
+        card.addEventListener('dragstart', e => {
+          e.dataTransfer.setData('text/plain', card.dataset.id);
+        });
+      });
+
+      document.querySelectorAll('.kanban-col').forEach(col => {
+        col.addEventListener('dragover', e => {
+          e.preventDefault();
+          col.classList.add('drag-over');
+        });
+        col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+        col.addEventListener('drop', e => {
+          e.preventDefault();
+          col.classList.remove('drag-over');
+          const id = e.dataTransfer.getData('text/plain');
+          const task = tasks.find(t => t.id === id);
+          if (task && task.status !== col.dataset.stage) {
+            task.status = col.dataset.stage;
+            if (task.status === 'Done') task.progress = 100;
+            saveTasks();
+            showToast(`Moved to ${col.dataset.stage}`);
+          }
+        });
+      });
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('task-table-body');
+      tbody.innerHTML = getFilteredTasks().map(t => `
+        <tr>
+          <td><strong>${t.title}</strong></td>
+          <td>${t.status}</td>
+          <td><span class="badge badge-${t.priority.toLowerCase()}">${t.priority}</span></td>
+          <td>${t.assignee}</td>
+          <td>${t.due}</td>
+          <td>
+            <button class="btn" style="padding:4px 8px;font-size:0.75rem;" onclick="openEditModal('${t.id}')">Edit</button>
+            <button class="btn btn-danger" style="padding:4px 8px;font-size:0.75rem;" onclick="deleteTask('${t.id}')">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderAnalytics() {
+      const categories = ['Frontend', 'Backend', 'UI/UX', 'QA'];
+      document.getElementById('category-breakdown').innerHTML = categories.map(cat => {
+        const count = tasks.filter(t => t.category === cat).length;
+        const pct = tasks.length ? Math.round((count / tasks.length) * 100) : 0;
+        return `
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:5px;">
+              <span>${cat}</span><span>${count} tasks (${pct}%)</span>
+            </div>
+            <div class="progress-bar" style="height:8px;"><div class="progress-fill" style="width:${pct}%"></div></div>
+          </div>
+        `;
+      }).join('');
+
+      const members = ['Aarav Sharma', 'Priya Nair', 'Rohan Mehta', 'Ananya Patel'];
+      document.getElementById('team-capacity').innerHTML = members.map(m => {
+        const count = tasks.filter(t => t.assignee === m && t.status !== 'Done').length;
+        const pct = Math.min(count * 30, 100);
+        return `
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:5px;">
+              <span>${m}</span><span>${count} active tasks</span>
+            </div>
+            <div class="progress-bar" style="height:8px;"><div class="progress-fill" style="width:${pct}%;background:var(--cyan);"></div></div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('team-grid').innerHTML = members.map(m => `
+        <div class="card">
+          <div style="font-weight:600;font-size:1rem;">${m}</div>
+          <div style="color:var(--text-secondary);font-size:0.82rem;margin-top:4px;">Product Engineering</div>
+          <div style="margin-top:12px;font-size:0.8rem;color:var(--emerald);">● Active</div>
+        </div>
+      `).join('');
+    }
+
+    window.deleteTask = function(id) {
+      tasks = tasks.filter(t => t.id !== id);
+      saveTasks();
+      showToast('Task deleted');
+    };
+
+    window.openEditModal = function(id) {
+      const t = tasks.find(x => x.id === id);
+      if (!t) return;
+      document.getElementById('modal-title').textContent = 'Edit Task';
+      document.getElementById('task-id').value = t.id;
+      document.getElementById('task-title-input').value = t.title;
+      document.getElementById('task-status-input').value = t.status;
+      document.getElementById('task-priority-input').value = t.priority;
+      document.getElementById('task-assignee-input').value = t.assignee;
+      document.getElementById('task-category-input').value = t.category;
+      document.getElementById('task-due-input').value = t.due;
+      document.getElementById('task-progress-input').value = t.progress;
+      document.getElementById('task-modal').classList.add('open');
+    };
+
+    function renderAll() {
+      renderKPIs();
+      renderVelocityChart();
+      renderUpcoming();
+      renderKanban();
+      renderTable();
+      renderAnalytics();
+    }
+
+    // Navigation
+    document.querySelectorAll('.nav-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+        document.getElementById('view-' + btn.dataset.view).classList.add('active');
+      });
+    });
+
+    // Timeframe buttons
+    document.querySelectorAll('.timeframe-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentRange = btn.dataset.range;
+        document.getElementById('chart-subtitle').textContent = 'Range: ' + currentRange;
+        renderVelocityChart();
+      });
+    });
+
+    // Search & Filters
+    document.getElementById('global-search').addEventListener('input', e => {
+      searchQuery = e.target.value.toLowerCase();
+      renderKanban();
+      renderTable();
+    });
+    document.getElementById('kanban-priority-filter').addEventListener('change', renderKanban);
+
+    // Theme toggle
+    document.getElementById('theme-toggle').addEventListener('click', () => {
+      document.body.classList.toggle('light-theme');
+    });
+
+    // Modal controls
+    const modal = document.getElementById('task-modal');
+    document.getElementById('open-new-task').addEventListener('click', () => {
+      document.getElementById('modal-title').textContent = 'Create New Task';
+      document.getElementById('task-form').reset();
+      document.getElementById('task-id').value = '';
+      document.getElementById('task-due-input').value = new Date().toISOString().split('T')[0];
+      modal.classList.add('open');
+    });
+    document.getElementById('close-modal').addEventListener('click', () => modal.classList.remove('open'));
+    document.getElementById('cancel-modal').addEventListener('click', () => modal.classList.remove('open'));
+
+    document.getElementById('task-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const id = document.getElementById('task-id').value;
+      const payload = {
+        id: id || 't' + Date.now(),
+        title: document.getElementById('task-title-input').value,
+        status: document.getElementById('task-status-input').value,
+        priority: document.getElementById('task-priority-input').value,
+        assignee: document.getElementById('task-assignee-input').value,
+        category: document.getElementById('task-category-input').value,
+        due: document.getElementById('task-due-input').value,
+        progress: Number(document.getElementById('task-progress-input').value)
+      };
+      if (id) {
+        const idx = tasks.findIndex(t => t.id === id);
+        if (idx > -1) tasks[idx] = payload;
+        showToast('Task updated');
+      } else {
+        tasks.unshift(payload);
+        showToast('Task created');
+      }
+      modal.classList.remove('open');
+      saveTasks();
+    });
+
+    // CSV Export
+    document.getElementById('export-csv-btn').addEventListener('click', () => {
+      const headers = ['ID', 'Title', 'Status', 'Priority', 'Assignee', 'Category', 'Due Date', 'Progress'];
+      const rows = tasks.map(t => [t.id, `"${t.title}"`, t.status, t.priority, t.assignee, t.category, t.due, t.progress].join(','));
+      const csv = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'nexusflow-tasks.csv';
+      a.click();
+      showToast('CSV exported');
+    });
+
+    // Reset Demo
+    document.getElementById('reset-demo-btn').addEventListener('click', () => {
+      tasks = [...DEFAULT_TASKS];
+      saveTasks();
+      showToast('Demo data restored');
+    });
+
+    renderAll();
+  </script>
+</body>
+</html>
